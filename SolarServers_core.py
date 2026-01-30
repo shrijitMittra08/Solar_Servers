@@ -14,7 +14,7 @@ IGNORE_APPS = [
 ]
 
 try:
-    from ai_engine import predict
+    from ai_engine import AIEngine
     AI_AVAILABLE = True
 except ImportError:
     AI_AVAILABLE = False
@@ -24,6 +24,16 @@ class SolarServerCore:
         self.pid = os.getpid()
         self.name_cache = {}
         self.meta = self._hardware_scan()
+        if AI_AVAILABLE:
+            try:
+                self.ai = AIEngine()
+                print("AI initialized")
+            except Exception:
+                self.ai = None
+                print("AI failed to initialize")
+        else:
+            self.ai = None
+
         print(f"SolarServers Core Online | PID {self.pid}")
         print(f"Meta: {self.meta}")
 
@@ -84,10 +94,14 @@ class SolarServerCore:
             }
 
             # AI classification
-            if AI_AVAILABLE:
+            if self.ai:
                 try:
-                    entry["is_threat"] = bool(predict(entry))
-                except:
+                    entry["is_threat"] = self.ai.predict_threat(
+                        entry["ip"],
+                        entry["port"],
+                        "ESTABLISHED"
+                    )
+                except Exception:
                     entry["is_threat"] = False
             else:
                 entry["is_threat"] = False
