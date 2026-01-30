@@ -19,7 +19,7 @@ try:
 except ImportError:
     AI_AVAILABLE = False
 
-class SystemXCore:
+class SolarServerCore:
     def __init__(self):
         self.pid = os.getpid()
         self.name_cache = {}
@@ -105,7 +105,7 @@ class SystemXCore:
         }
 
 if __name__ == "__main__":
-    core = SystemXCore()
+    core = SolarServerCore()
     pkt = core.get_packet()
     print(f"\nFound {len(pkt['connections'])} connections")
     for c in pkt["connections"][:10]:
