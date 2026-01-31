@@ -1,6 +1,7 @@
 import psutil as ps
 import os
 import ctypes
+import platform
 from typing import List, Dict
 import numpy as np
 
@@ -48,8 +49,11 @@ class SolarServersCore:
             is_admin = os.getuid() == 0
         except:
             try:
-                is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-            except:
+                if platform.system() == "Windows":
+                    is_admin = bool(ctypes.windll.shell32.IsUserAnAdmin())
+                else:
+                    is_admin = False
+            except (AttributeError, OSError):
                 is_admin = False
 
         tier = "HIGH_END" if ram >= 8 else "LOW_END"
@@ -98,7 +102,7 @@ class SolarServersCore:
             # AI classification
             if self.ai:
                 try:
-                    entry["is_threat"] = bool(np.asscalar(np.array(self.ai.predict_threat(entry["ip"], entry["port"], "ESTABLISHED"))))
+                    entry["is_threat"] = bool(np.array(self.ai.predict_threat(entry["ip"], entry["port"], "ESTABLISHED")).item())
                 except Exception:
                     entry["is_threat"] = False
             else:
