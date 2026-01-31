@@ -1,22 +1,24 @@
 import asyncio
 import psutil
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi import Body
 from SolarServers_core import SolarServersCore
 
-app = FastAPI()
 core = SolarServersCore()
 
 INTERVAL = 0.2
 
-@app.on_event("startup")
-async def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     print("SolarServers server online")
     print(f"Admin mode: {core.meta.get('is_admin', False)}")
-
-@app.on_event("shutdown")
-async def on_shutdown():
+    yield
+    # Shutdown
     print("SolarServers server shutting")
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def root():
