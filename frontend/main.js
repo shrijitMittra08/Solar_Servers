@@ -88,11 +88,15 @@ function removePlanet(id) {
 
 function sunMesh() {
     const geometry = tier === "HIGH_END" ? new THREE.SphereGeometry(4 * 2, 32, 32) : new THREE.IcosahedronGeometry(4 * 2, 1);
-    const material = new THREE.MeshStandardMaterial({color: 0xffcc33, emissive: 0xffffaa, emissiveIntensity: 1.5});
+    const material = new THREE.MeshStandardMaterial({
+        color: 0xffdd55,        // more yellow, less orange
+    emissive: 0xffee88,     // warm yellow glow
+    emissiveIntensity: 2.0
+    });
     sun = new THREE.Mesh(geometry, material);
     sun.position.set(0, 0, 0);
     scene.add(sun);
-    const sunLight = new THREE.PointLight(0xffffff, 2, 200);
+    const sunLight = new THREE.PointLight(0xfff2cc, 2.2, 220);
     sunLight.position.set(0, 0, 0);
     sunLight.castShadow = tier !== "LOW_END";
     scene.add(sunLight);
@@ -106,19 +110,28 @@ function createPlanetMesh(tier, isThreat) {
 
     const material = new THREE.MeshStandardMaterial({
         color: isThreat ? 0xff3333 : 0x33ff99,
+        emissive: isThreat ? 0xff0000 : 0x000000,
+        emissiveIntensity: isThreat ? 0.6 : 0.0,
         flatShading: tier === "LOW_END"
     });
 
     const mesh = new THREE.Mesh(geometry, material);
+
     mesh.castShadow = tier !== "LOW_END";
     mesh.receiveShadow = tier !== "LOW_END";
-    mesh.position.set(0, 0, 0);
+
     mesh.targetPosition = new THREE.Vector3();
+
     mesh.orbitAngle = Math.random() * Math.PI * 2;
     mesh.orbitSpeed = (0.01 + Math.random() * 0.02);
 
+    // 🔴 threat metadata
+    mesh.isThreat = isThreat;
+    mesh.pulsePhase = Math.random() * Math.PI * 2;
+
     return mesh;
 }
+
 
 function computeOrbitPosition(conn, index) {
     const planet = planets[conn.id];
@@ -126,8 +139,6 @@ function computeOrbitPosition(conn, index) {
 
     const radius = 15 + (index % 10) * 3;
     const yOffset = (index % 5) * 1.2;
-
-    planet.orbitAngle += planet.orbitSpeed;
 
     return new THREE.Vector3(
         Math.cos(planet.orbitAngle) * planet.orbitRadius,
@@ -168,7 +179,7 @@ function updateFromPacket(packet) {
     packet.connections.forEach((conn, index) => {
         const id = conn.id;
         seen.add(id);
-        const radius = 40 + (index) * 5;
+        const radius = 35 + (index) * 5;
 
         if (!planets[id]) {
             if (Object.keys(planets).length >= maxPlanets) return;
@@ -176,7 +187,7 @@ function updateFromPacket(packet) {
             const mesh = createPlanetMesh(tier, conn.is_threat);
             mesh.orbitRadius = radius;
             mesh.orbitAngle = Math.random() * Math.PI * 2; 
-            mesh.orbitSpeed = 0.2 / radius;
+            mesh.orbitSpeed = 0.085 / radius;
             registerPlanet(id, mesh);
         }
 
@@ -204,8 +215,24 @@ function animate() {
     }
 
     Object.values(planets).forEach(planet => {
-        planet.position.lerp(planet.targetPosition, 0.08);
-    });
+    planet.orbitAngle += planet.orbitSpeed;
+
+    planet.targetPosition.set(
+        Math.cos(planet.orbitAngle) * planet.orbitRadius,
+        planet.position.y,
+        Math.sin(planet.orbitAngle) * planet.orbitRadius
+    );
+
+    planet.position.lerp(planet.targetPosition, 0.08);
+
+    // 🔴 Pulse ONLY malicious planets
+    if (planet.isThreat) {
+        planet.pulsePhase += 0.05;
+        planet.material.emissiveIntensity =
+            0.6 + Math.sin(planet.pulsePhase) * 0.4;
+    }
+});
+
     Object.keys(beams).forEach(id => {
         const beam = beams[id];
         const planet = planets[id];
