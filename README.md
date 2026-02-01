@@ -13,3 +13,4 @@ How to test:
 
 # Changelog
 1. Added planets to show connections to sites via browser
+2. Added on-click shown tooltips for planets, showing connection details
