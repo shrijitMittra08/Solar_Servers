@@ -32,9 +32,9 @@ except ImportError:
 
 class SolarServersCore:
     def __init__(self):
-        self.dns_cache = {}
         self.pid = os.getpid()
         self.name_cache = {}
+        self.dns_cache = {}
         self.meta = self._hardware_scan()
         if AI_AVAILABLE:
             try:
@@ -101,7 +101,7 @@ class SolarServersCore:
                 continue
 
             isBrowser = app_name.lower() in BROWSERS
-            domain = None;
+            domain = None
 
             if isBrowser:
                 domain = self._resolve_domain(c.raddr.ip)
@@ -122,7 +122,7 @@ class SolarServersCore:
 
             if self.ai:
                 try:
-                    entry["is_threat"] = bool(np.array(self.ai.predict_threat(entry["ip"], entry["port"], "ESTABLISHED")).item())
+                    entry["is_threat"] = bool(np.array(self.ai.predict_threat(entry["ip"], entry["port"], "ESTABLISHED", entry.get("domain"))).item())
                 except Exception:
                     entry["is_threat"] = False
             else:
@@ -144,11 +144,42 @@ class SolarServersCore:
         try:
             domain = socket.gethostbyaddr(ip)[0]
         except Exception:
-            domain = ip
+            domain = None
+
+        # Clean up the domain to show more user-friendly names
+        if domain:
+            domain = domain.lower()
+            
+            # Skip generic hosting/infrastructure names
+            generic_patterns = [
+                'ec2-', 'compute-', 'server-', 'host-', 'node-',
+                'ip-', 'static-', 'dynamic-', 'dhcp-', 'nat-',
+                'gateway-', 'router-', 'switch-', 'proxy-',
+                'cdn-', 'edge-', 'cache-', 'lb-', 'loadbalancer-',
+                'aws-', 'gcp-', 'azure-', 'cloud-', 'vm-',
+                'container-', 'pod-', 'k8s-', 'docker-'
+            ]
+            
+            if any(pattern in domain for pattern in generic_patterns):
+                domain = None
+            
+            # Try to extract actual domain from subdomains
+            if domain:
+                parts = domain.split('.')
+                # For patterns like "something.google.com" -> try "google.com"
+                if len(parts) >= 3:
+                    # Check if the last two parts form a known TLD + domain
+                    potential_domain = '.'.join(parts[-2:])
+                    if potential_domain in ['google.com', 'facebook.com', 'amazon.com', 'microsoft.com', 
+                                          'apple.com', 'youtube.com', 'twitter.com', 'instagram.com',
+                                          'linkedin.com', 'github.com', 'stackoverflow.com', 'reddit.com']:
+                        domain = potential_domain
+                    # For .com, .org, .net, .edu, etc.
+                    elif len(parts) >= 2 and parts[-1] in ['com', 'org', 'net', 'edu', 'gov', 'io', 'co', 'ai']:
+                        domain = '.'.join(parts[-2:])
 
         self.dns_cache[ip] = domain
         return domain
-
 
     def get_packet(self) -> Dict:
         return {
