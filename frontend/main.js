@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "OrbitControls";
 
-let scene, camera, renderer, ws, sun, controls, raycaster, mouse, tooltip, selectPlanet = null;
+let scene, camera, renderer, ws, sun, controls, raycaster, mouse, tooltip, selectPlanet = null, hoveredPlanet = null;
 const planets = {};
 const beams = {};          
 let tier = "LOW_END";      
@@ -121,8 +121,8 @@ function sunMesh() {
 function createPlanetMesh(tier, isThreat) {
     const geometry =
         tier === "HIGH_END"
-            ? new THREE.SphereGeometry(1.5 * 2, 32, 32)
-            : new THREE.IcosahedronGeometry(1.2 * 2, 0);
+            ? new THREE.SphereGeometry(2.5 * 2, 32, 32)
+            : new THREE.IcosahedronGeometry(2 * 2, 0);
 
     const material = new THREE.MeshStandardMaterial({
         color: isThreat ? 0xff3333 : 0x33ff99,
@@ -237,9 +237,10 @@ function animate() {
 
     const tooltip = document.getElementById("planet-tooltip");
 
-    if (selectPlanet) {
-        const d = selectPlanet.userData;
-        const vector = selectPlanet.position.clone();
+    const activePlanet = selectPlanet || hoveredPlanet;
+    if (activePlanet) {
+        const d = activePlanet.userData;
+        const vector = activePlanet.position.clone();
         vector.project(camera);
         const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
         const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
@@ -249,12 +250,13 @@ function animate() {
         tooltip.style.display = "block";
 
         tooltip.innerHTML = `
-            <strong>${d.type === "browser" ? "Website" : "Process"}</strong><br>
-            ${d.domain ? `🌐 ${d.domain}<br>` : ""}
-            App: ${d.app}<br>
+            <strong>${d.type === "browser" ? "Browser Connection" : "Process"}</strong><br>
+            ${d.type === "browser" ? `Browser: ${d.app}<br>Site: ${d.domain || d.ip}<br>` : `App: ${d.app}<br>`}
             IP: ${d.ip}:${d.port}<br>
             ${d.isThreat ? "🔴 Malicious" : "🟢 Normal"}
         `;
+    } else {
+        tooltip.style.display = "none";
     }
 
     raycaster.setFromCamera(mouse, camera);
@@ -351,20 +353,22 @@ window.addEventListener("mousemove", (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    const tooltip = document.getElementById("planet-tooltip");
-    tooltip.style.left = event.clientX + 12 + "px";
-    tooltip.style.top = event.clientY + 12 + "px";
-});
-
-window.addEventListener("click", () => {
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(Object.values(planets));
     if (intersects.length > 0) {
-        selectPlanet = intersects[0].object;
+        hoveredPlanet = intersects[0].object;
+        document.body.style.cursor = 'pointer';
+    } else {
+        hoveredPlanet = null;
+        document.body.style.cursor = 'default';
+    }
+});
+
+window.addEventListener("click", () => {
+    if (hoveredPlanet) {
+        selectPlanet = hoveredPlanet;
     } else {
         selectPlanet = null;
-        const tooltip = document.getElementById("planet-tooltip");
-        tooltip.style.display = "none";
     }
 })
 
@@ -373,4 +377,3 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-

@@ -14,3 +14,10 @@ How to test:
 # Changelog
 1. Added planets to show connections to sites via browser
 2. Added on-click shown tooltips for planets, showing connection details
+3. Integrated AI engine for real-time threat detection using machine learning on network connections
+4. Built FastAPI backend with WebSocket support for streaming connection data
+5. Created web frontend with HTML, CSS, and JavaScript for visualizing network activity
+6. Added core scanning module for monitoring processes, connections, and system info
+7. Included AI training script and NSL-KDD datasets for model development
+8. Added requirements file with all Python dependencies
+9. Suppressed sklearn warnings to clean up server output
