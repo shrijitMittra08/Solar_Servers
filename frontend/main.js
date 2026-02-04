@@ -251,7 +251,7 @@ function animate() {
 
         tooltip.innerHTML = `
             <strong>${d.type === "browser" ? "Browser Connection" : "Process"}</strong><br>
-            ${d.type === "browser" ? `Browser: ${d.app}<br>Site: ${d.domain || d.ip}<br>` : `App: ${d.app}<br>`}
+            ${d.type === "browser" ? `Browser: ${d.app}<br>${d.domain ? `Site: ${d.domain}<br>` : ''}` : `App: ${d.app}<br>`}
             IP: ${d.ip}:${d.port}<br>
             ${d.isThreat ? "🔴 Malicious" : "🟢 Normal"}
         `;
