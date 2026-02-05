@@ -17,15 +17,16 @@ start "SolarServers Backend" cmd /k "call .venv\Scripts\activate.bat && uvicorn 
 
 timeout /t 3 /nobreak > nul
 
-echo Starting frontend server on port 3000...
-start "SolarServers Frontend" cmd /k "call .venv\Scripts\activate.bat && cd frontend && python -m http.server 3000"
+echo Starting frontend server on port 8000...
+start "SolarServers Frontend" cmd /k "call .venv\Scripts\activate.bat && cd frontend && python -m http.server 8000"
 
 echo.
 echo ==================================================
 echo Servers started successfully!
-echo Frontend: http://localhost:3000
+echo Frontend: http://localhost:8000
 echo Backend API: http://localhost:8000
 echo.
 echo Close the command windows to stop the servers
 echo ==================================================
+
 pause
